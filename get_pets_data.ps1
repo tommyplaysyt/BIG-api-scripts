@@ -2,6 +2,10 @@
 $petsApiUrl = "https://biggamesapi.io/api/exists"
 $rapApiUrl = "https://biggamesapi.io/api/rap"
 
+# V1 Deprecation warning
+Write-Output "V1 uses an old logic and writes Market Cap and RAP Values to an Excel Document. Run data_retrieve_v2.ps1 for an updated version that converts combined RAP API and Exist API to a json file. (HUGES + TITANICS ONLY)"
+
+Write-Output "Starting import request from Exist API and RAP API"
 # Make a GET request to the Pets API and save the response as JSON
 $petsResponse = Invoke-RestMethod -Uri $petsApiUrl -Method Get
 
