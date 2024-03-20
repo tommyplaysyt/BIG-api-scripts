@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Market Data Visualization</title>
+    <!-- Load Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+    <h1>Pet Market Data Visualization</h1>
+
+    <!-- Container for the plots -->
+    <div id="plots-container">
+        <!-- Plot for RAP Value -->
+        <div id="rap-value-plot"></div>
+        <!-- Plot for Market Cap -->
+        <div id="market-cap-plot"></div>
+    </div>
+
+    <script>
+        // Fetch the latest JSON data using PHP script
+        fetch('latest_data.php')
+            .then(response => response.json())
+            .then(data => {
+                // Process the data and create plots
+                const petIDs = data.map(item => item.PetID);
+                const rapValues = data.map(item => item.RAPValue);
+                const marketCaps = data.map(item => item.MarketCap);
+
+                // Create a plot for RAP Value
+                const rapValuePlot = document.getElementById('rap-value-plot');
+                Plotly.newPlot(rapValuePlot, [{
+                    x: petIDs,
+                    y: rapValues,
+                    type: 'bar',
+                    name: 'RAP Value'
+                }], {
+                    title: 'RAP Value of Pets'
+                });
+
+                // Create a plot for Market Cap
+                const marketCapPlot = document.getElementById('market-cap-plot');
+                Plotly.newPlot(marketCapPlot, [{
+                    x: petIDs,
+                    y: marketCaps,
+                    type: 'bar',
+                    name: 'Market Cap'
+                }], {
+                    title: 'Market Cap of Pets'
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    </script>
+</body>
+
+</html>

@@ -103,47 +103,21 @@ if ($petsResponse.status -eq "ok") {
     # Sort pets based on their exist counts in descending order
     $sortedData = $petsData | Sort-Object -Property ExistCount -Descending
 
-    # Create a new Excel COM object
-    $excel = New-Object -ComObject Excel.Application
-    $workbook = $excel.Workbooks.Add()
-    $sheet = $workbook.Worksheets.Item(1)
+    # Convert sorted data to JSON format
+    $jsonOutput = $sortedData | ConvertTo-Json
 
-    # Set headers in Excel sheet
-    $sheet.Cells.Item(1, 1) = "Pet ID"
-    $sheet.Cells.Item(1, 2) = "Pet Name"
-    $sheet.Cells.Item(1, 3) = "Exist Count"
-    $sheet.Cells.Item(1, 4) = "Category"
-    $sheet.Cells.Item(1, 5) = "RAP Value"
-    $sheet.Cells.Item(1, 6) = "Market Cap"  # New column for Market Cap
+    # Get the current system time for the file name
+    $currentTime = Get-Date -Format "yyyyMMdd-HHmmss"
 
-    # Write sorted data to Excel sheet
-    $row = 2
-    foreach ($data in $sortedData) {
-        $sheet.Cells.Item($row, 1) = $data.PetID
-        $sheet.Cells.Item($row, 2) = $data.PetName
-        $sheet.Cells.Item($row, 3) = $data.ExistCount
-        $sheet.Cells.Item($row, 4) = $data.Category
-        $sheet.Cells.Item($row, 5) = $data.RAPValue
-        $sheet.Cells.Item($row, 6) = $data.MarketCap  # Write Market Cap in the new column
-        $row++
-    }
+    # Specify the output directory and JSON file name with system time
+    $outputDirectory = "$env:USERPROFILE\Documents"  # Update with your desired directory path
+    $outputFileName = "sorted_pets_data_$currentTime.json"
+    $outputFilePath = Join-Path -Path $outputDirectory -ChildPath $outputFileName
 
-    # Calculate and write the sum of Market Caps at the bottom of the sheet
-    $totalMarketCapFormula = "=SUM(F2:F$row)"
-    $totalMarketCapCell = $sheet.Cells.Item($row, 6)
-    $totalMarketCapCell.Formula = $totalMarketCapFormula
+    # Save the JSON data to the specified file path
+    $jsonOutput | Set-Content -Path $outputFilePath -Force
 
-    # Specify the output directory and Excel file name
-    $outputDirectory = "$env:USERPROFILE\Documents"
-    $outputFileName = Join-Path -Path $outputDirectory -ChildPath "sorted_pets_data_with_rap_and_marketcap.xlsx"
-
-    # Save the Excel file
-    $workbook.SaveAs($outputFileName)
-    $workbook.Close()
-    $excel.Quit()
-    Remove-Variable excel, workbook, sheet
-
-    Write-Output "Sorted pets data with RAP values and Market Caps written to $outputFileName successfully."
+    Write-Output "Sorted pets data with RAP values and Market Caps saved to $outputFilePath successfully."
 } else {
     Write-Output "Failed to retrieve data from the Pets API. Check your connection."
 }
