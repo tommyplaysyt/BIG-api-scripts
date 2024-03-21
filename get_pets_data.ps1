@@ -27,6 +27,8 @@ if ($petsResponse.status -eq "ok") {
         "Shiny Rainbow" = @{}
     }
 
+    Write-Output "Hashtables to store RAP data by pet type created successfully"
+
     # Fetch all RAP data from the RAP API and categorize it
     try {
         $rapResponse = Invoke-RestMethod -Uri $rapApiUrl -Method Get
@@ -52,7 +54,7 @@ if ($petsResponse.status -eq "ok") {
     } catch {
         Write-Output "Error occurred while fetching RAP data: $_"
     }
-
+    Write-Output "Fetching and filtering RAP data, this can take a while depending on your connection"
     # Iterate through each filtered pet to fetch its data
     foreach ($pet in $filteredPets) {
         # Determine the correct category based on pet attributes (pt and sh)
