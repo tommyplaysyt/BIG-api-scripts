@@ -1,146 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pet Market Data Visualization</title>
-    <!-- Load Plotly.js for charts -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        /* Add custom CSS styles for better presentation */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        #charts-container {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 30px;
-        }
-
-        .chart {
-            width: 45%;
-            min-height: 300px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        .data-table {
-            margin-bottom: 30px;
-        }
-    </style>
+    <title>Pet Data Viewer</title>
 </head>
-
 <body>
-    <h1>Pet Market Data Visualization</h1>
-
-    <div id="charts-container">
-        <div id="rap-chart" class="chart"></div>
-        <div id="market-cap-chart" class="chart"></div>
+    <h1>Select a Pet and Variant</h1>
+    <div>
+        <label for="petSelect">Select a Pet:</label>
+        <select id="petSelect"></select>
     </div>
-
-    <div class="data-table">
-        <h2>Pet Data Table</h2>
-        <table id="pet-table">
-            <thead>
-                <tr>
-                    <th>Pet ID</th>
-                    <th>Pet Name</th>
-                    <th>Exist Count</th>
-                    <th>Category</th>
-                    <th>RAP Value</th>
-                    <th>Market Cap</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Table rows will be dynamically populated with data -->
-            </tbody>
-        </table>
+    <div>
+        <label for="variantSelect">Select a Variant:</label>
+        <select id="variantSelect"></select>
     </div>
+    <div id="petInfo"></div>
 
     <script>
-        // Function to fetch data and populate charts and table
-        async function fetchDataAndPopulate() {
-            try {
-                const response = await fetch('latest_data.php');
-                const data = await response.json();
+        document.addEventListener('DOMContentLoaded', () => {
+            const petSelect = document.getElementById('petSelect');
+            const variantSelect = document.getElementById('variantSelect');
+            const petInfoDiv = document.getElementById('petInfo');
 
-                // Populate the pet data table
-                const tableBody = document.querySelector('#pet-table tbody');
-                tableBody.innerHTML = '';
-                data.forEach(item => {
-                    const row = `<tr>
-                        <td>${item.PetID}</td>
-                        <td>${item.PetName}</td>
-                        <td>${item.ExistCount}</td>
-                        <td>${item.Category}</td>
-                        <td>${item.RAPValue}</td>
-                        <td>${item.MarketCap}</td>
-                    </tr>`;
-                    tableBody.innerHTML += row;
-                });
+            // Function to fetch the latest sorted_pets_data JSON file
+            async function fetchLatestPetData() {
+                try {
+                    // Fetch the list of files in the directory
+                    const fileNamesResponse = await fetch('json/');
+                    const fileNames = await fileNamesResponse.json();
 
-                // Prepare data for charts
-                const petIDs = data.map(item => item.PetID);
-                const rapValues = data.map(item => item.RAPValue);
-                const marketCaps = data.map(item => item.MarketCap);
+                    // Find the latest sorted_pets_data file
+                    const sortedPetFiles = fileNames.filter(fileName => fileName.startsWith('sorted_pets_data_'));
+                    const latestFile = sortedPetFiles.reduce((latest, current) => {
+                        return current > latest ? current : latest;
+                    }, 'sorted_pets_data_');
 
-                // Create Rap Value Chart
-                const rapChart = document.getElementById('rap-chart');
-                Plotly.newPlot(rapChart, [{
-                    x: petIDs,
-                    y: rapValues,
-                    type: 'bar',
-                    name: 'RAP Value'
-                }], {
-                    title: 'RAP Value of Pets'
-                });
+                    // Fetch the latest sorted_pets_data JSON file
+                    const petDataResponse = await fetch(`json/${latestFile}`);
+                    const petData = await petDataResponse.json();
 
-                // Create Market Cap Chart
-                const marketCapChart = document.getElementById('market-cap-chart');
-                Plotly.newPlot(marketCapChart, [{
-                    x: petIDs,
-                    y: marketCaps,
-                    type: 'bar',
-                    name: 'Market Cap'
-                }], {
-                    title: 'Market Cap of Pets'
-                });
-
-            } catch (error) {
-                console.error('Error fetching or processing data:', error);
+                    return petData;
+                } catch (error) {
+                    console.error('Error fetching pet data:', error);
+                    return null;
+                }
             }
-        }
 
-        // Call the fetch and populate function on page load
-        window.onload = fetchDataAndPopulate;
+            // Function to populate the dropdowns with pet options and variants
+            async function populateDropdowns() {
+                const petData = await fetchLatestPetData();
+
+                if (!petData) {
+                    petInfoDiv.innerHTML = '<p>Error fetching pet data. Please try again later.</p>';
+                    return;
+                }
+
+                // Populate the pet select dropdown
+                petData.forEach(pet => {
+                    const petOption = document.createElement('option');
+                    petOption.value = pet.PetID;
+                    petOption.textContent = pet.PetName;
+                    petSelect.appendChild(petOption);
+                });
+
+                // Event listener for pet select change
+                petSelect.addEventListener('change', () => {
+                    const selectedPetId = petSelect.value;
+                    const selectedPet = petData.find(pet => pet.PetID === selectedPetId);
+
+                    // Clear previous options in variant select
+                    variantSelect.innerHTML = '';
+
+                    // Populate the variant select based on selected pet
+                    if (selectedPet) {
+                        const variants = petData.filter(pet => pet.PetID.startsWith(selectedPet.PetID));
+
+                        variants.forEach(variant => {
+                            const variantOption = document.createElement('option');
+                            variantOption.value = variant.PetID;
+                            variantOption.textContent = variant.PetName;
+                            variantSelect.appendChild(variantOption);
+                        });
+                    }
+                });
+
+                // Event listener for variant select change
+                variantSelect.addEventListener('change', () => {
+                    const selectedVariantId = variantSelect.value;
+                    const selectedVariant = petData.find(pet => pet.PetID === selectedVariantId);
+
+                    // Display pet information
+                    if (selectedVariant) {
+                        petInfoDiv.innerHTML = `
+                            <h2>${selectedVariant.PetName}</h2>
+                            <p>Exist Count: ${selectedVariant.ExistCount}</p>
+                            <p>RAP Value: ${selectedVariant.RAPValue}</p>
+                            <p>Category: ${selectedVariant.Category}</p>
+                            <p>Market Cap: ${selectedVariant.MarketCap}</p>
+                        `;
+                    } else {
+                        petInfoDiv.innerHTML = '<p>No information available for selected pet variant.</p>';
+                    }
+                });
+            }
+
+            // Call the function to populate dropdowns when the DOM is ready
+            populateDropdowns();
+        });
     </script>
 </body>
-
 </html>
